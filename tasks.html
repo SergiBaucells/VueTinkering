@@ -8,17 +8,23 @@
     <title>Document</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css" />
     <style>
+
         li.completed {
             text-decoration: line-through;
         }
+
+        li.active{
+            background-color: #15f5ff;
+        }
+
     </style>
 </head>
 <body>
 
-    <div id="root">
+    <div id="root" v-cloak>
 
         <ul>
-            <li v-for="task in tasks" :class="{completed: isCompleted(task) }" @dblclick="updateTask(task)">
+            <li v-for="task in filteredTasks" :class="{completed: isCompleted(task) }" @dblclick="updateTask(task)">
 
                 <input type="text" v-if="task == editedTask">
                 <div v-else>
@@ -35,11 +41,39 @@
         <!-- @click = que algú fa click, s'executa el mètode "addTask"-->
         <button id="add" @click="addTask">Afegir</button>
 
+        <h2>Filtres</h2>
+
+        <ul>
+            <li @click="show('all')" :class="{active: this.filter === 'all' }">All</li>
+            <li @click="show('completed')" :class="{active: this.filter === 'completed' }">Completed</li>
+            <li @click="show('pending')" :class="{active: this.filter === 'pending' }">Pending</li>
+        </ul>
+
+
     </div>
 
     <script src="https://unpkg.com/vue"></script>
 
     <script>
+
+        // visibility filters
+        var filters = {
+            all: function (tasks) {
+                return tasks
+            },
+            pending: function (tasks) {
+                return tasks.filter(function (task) {
+                    return !task.completed
+                })
+            },
+            completed: function (tasks) {
+                return tasks.filter(function (task) {
+                    return task.completed
+                })
+            }
+        }
+
+        const LOCAL_STORAGE_KEY = 'TASKS'
 
         let vm = new Vue({
 
@@ -49,32 +83,47 @@
 
                 editedTask: null,
 
+                filter: 'all',
+
                 newTask: '',
 
-                tasks: [
+                tasks: []
 
-                    {
-                        name : 'Comprar Pa',
-                        completed : true
-                    },
-                    {
-                        name : 'Apendre PHP',
-                        completed : true
-                    },
-                    {
-                        name : 'Prova',
-                        completed : false
-                    },
-                    {
-                        name : 'Prova1',
-                        completed : false
-                    }
+            },
 
-                ]
+            watch: {
+
+                tasks: function () {
+                    console.log('Ha canviat whatchers')
+                    //TODO Save to LocalStorage
+                    localStorage.setItem(LOCAL_STORAGE_KEY,JSON.stringify(this.tasks))
+
+                }
+
+            },
+
+
+            computed: {
+
+                filteredTasks() {
+
+                    return filters[this.filter](this.tasks)
+
+                },
+
+                pendingTaskCounter() {
+                   return filters.active(this.tasks).length
+                }
 
             },
 
             methods:{
+
+                show(filter){
+
+                    this.filter= filter
+
+                },
 
                 addTask(){
 
@@ -100,6 +149,17 @@
                     this.editedTask = task
 
                 }
+
+            },
+
+            mounted(){
+
+                console.log('Inici!')
+                //TODO Obtenir les tasques de la LocalStorage
+                //
+                //this.tasks= localStorage.getItem()
+                //this.newTask = localStorage.setItem('NEW_TASK','Nova tasca')
+                this.tasks = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '[]')
 
             }
 
